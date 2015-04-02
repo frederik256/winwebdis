@@ -1,12 +1,34 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using StackExchange.Redis;
+using System.Collections.Generic;
 
 namespace WinWebDis
 {
+    public class RedisServiceCore
+    {
+        private static RedisServiceState redis = new RedisServiceState();
+
+        public static ConnectionMultiplexer RedisConnection
+        {
+            get { return redis.RedisConnection; }
+        }
+
+        public bool Start()
+        {
+            redis.Initialize();
+            return true;
+        }
+
+        public bool Stop()
+        {
+            redis.Dispose();
+            return true;
+        }
+    }
+
     internal class RedisServiceState : IDisposable
     {
         public ConnectionMultiplexer RedisConnection { get; set; }
@@ -40,5 +62,4 @@ namespace WinWebDis
             disposed = true;
         }
     }
-
 }

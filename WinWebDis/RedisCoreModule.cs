@@ -1,8 +1,8 @@
 ﻿using System;
 using Nancy;
-using StackExchange.Redis;
 using Nancy.IO;
 using System.IO;
+using StackExchange.Redis;
 
 namespace WinWebDis
 {
@@ -76,29 +76,6 @@ namespace WinWebDis
             r.StatusCode = HttpStatusCode.OK; ;
 
             return r;
-        }
-    }
-
-
-    public class RedisServiceCore
-    {
-        private static RedisServiceState redis = new RedisServiceState();
-
-        public static ConnectionMultiplexer RedisConnection
-        {
-            get { return redis.RedisConnection; }
-        }
-
-        public bool Start()
-        {
-            redis.Initialize();
-            return true;
-        }
-
-        public bool Stop()
-        {
-            redis.Dispose();
-            return true;
         }
     }
 
