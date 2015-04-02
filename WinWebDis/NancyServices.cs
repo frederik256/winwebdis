@@ -8,6 +8,8 @@ namespace WinWebDis
 {
     public class CoreModule : NancyModule
     {
+        private const int POST_LIMIT = 64 * 1024 * 1024;
+
         public CoreModule()
         {
             Get["/status"] = _ => "I am alive! " + Guid.NewGuid().ToString();
@@ -32,21 +34,13 @@ namespace WinWebDis
         {
             string id = _.id;
             IDatabase db = ServiceCore.RedisConnection.GetDatabase();
-            RedisValue value = db.StringGet(id);
-            
-            if (!value.HasValue) return HttpStatusCode.NotFound;
-
+            byte[] value = db.StringGet(id);
 
             return new Response
-            {             
-                Contents = s => s.Write(value, 0, value.)
+            {
+                Contents = s => s.Write(value, 0, value.Length),
+                StatusCode = HttpStatusCode.OK
             };
-
-            Response r = (Response)value;
-            r.
-            r.StatusCode = HttpStatusCode.OK; ;
-
-            return r;
         }
 
         private dynamic SetTempKey(dynamic _)
@@ -55,7 +49,7 @@ namespace WinWebDis
 
             if (secondsTillExpiry < 0) throw new InvalidDataException("must have positive expiry value (in seconds).");
 
-            var body = Request.Body.ReadAsString();
+            byte[] body = Request.Body.ReadAllBytes(POST_LIMIT);
             var db = ServiceCore.RedisConnection.GetDatabase();
 
             var key = System.Guid.NewGuid().ToString("N");
@@ -72,7 +66,8 @@ namespace WinWebDis
         private dynamic SetKey(dynamic _)
         {
             string id = _.id;
-            var body = Request.Body.ReadAsString();
+
+            byte[] body = Request.Body.ReadAllBytes(POST_LIMIT);
             var db = ServiceCore.RedisConnection.GetDatabase();
 
             db.StringSet(id, body);
@@ -115,6 +110,15 @@ namespace WinWebDis
             {
                 return reader.ReadToEnd();
             }
+        }
+
+        public static byte[] ReadAllBytes(this RequestStream requestStream, long maxLength = long.MaxValue)
+        {
+            long length = requestStream.Length;
+            if (length > maxLength) throw new InvalidDataException("Maximum length for stream exceeded.");
+            byte[] bytes = new byte[requestStream.Length];
+            requestStream.Read(bytes, 0, (int)length);
+            return bytes;
         }
     }
 }
