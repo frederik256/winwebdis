@@ -6,11 +6,11 @@ using System.IO;
 
 namespace WinWebDis
 {
-    public class CoreModule : NancyModule
+    public class RedisCoreModule : NancyModule
     {
         private const int POST_LIMIT = 64 * 1024 * 1024;
 
-        public CoreModule()
+        public RedisCoreModule()
         {
             Get["/status"] = _ => "I am alive! " + Guid.NewGuid().ToString();
 
@@ -33,7 +33,7 @@ namespace WinWebDis
         private static dynamic GetKey(dynamic _)
         {
             string id = _.id;
-            IDatabase db = ServiceCore.RedisConnection.GetDatabase();
+            IDatabase db = RedisServiceCore.RedisConnection.GetDatabase();
             byte[] value = db.StringGet(id);
 
             return new Response
@@ -50,7 +50,7 @@ namespace WinWebDis
             if (secondsTillExpiry < 0) throw new InvalidDataException("must have positive expiry value (in seconds).");
 
             byte[] body = Request.Body.ReadAllBytes(POST_LIMIT);
-            var db = ServiceCore.RedisConnection.GetDatabase();
+            var db = RedisServiceCore.RedisConnection.GetDatabase();
 
             var key = System.Guid.NewGuid().ToString("N");
 
@@ -68,7 +68,7 @@ namespace WinWebDis
             string id = _.id;
 
             byte[] body = Request.Body.ReadAllBytes(POST_LIMIT);
-            var db = ServiceCore.RedisConnection.GetDatabase();
+            var db = RedisServiceCore.RedisConnection.GetDatabase();
 
             db.StringSet(id, body);
 
@@ -80,7 +80,7 @@ namespace WinWebDis
     }
 
 
-    public class ServiceCore
+    public class RedisServiceCore
     {
         private static RedisServiceState redis = new RedisServiceState();
 
@@ -115,7 +115,9 @@ namespace WinWebDis
         public static byte[] ReadAllBytes(this RequestStream requestStream, long maxLength = long.MaxValue)
         {
             long length = requestStream.Length;
+
             if (length > maxLength) throw new InvalidDataException("Maximum length for stream exceeded.");
+
             byte[] bytes = new byte[requestStream.Length];
             requestStream.Read(bytes, 0, (int)length);
             return bytes;

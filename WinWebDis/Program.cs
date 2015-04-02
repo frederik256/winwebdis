@@ -25,9 +25,9 @@ namespace WinWebDis
             {
                 //x.UseNLog();
 
-                x.Service<ServiceCore>(s =>
+                x.Service<RedisServiceCore>(s =>
                 {
-                    s.ConstructUsing(settings => new ServiceCore());
+                    s.ConstructUsing(settings => new RedisServiceCore());
                     s.WhenStarted(service => service.Start());
                     s.WhenStopped(service => service.Stop());
                     s.WithNancyEndpoint(x, c =>
