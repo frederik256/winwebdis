@@ -51,7 +51,6 @@ namespace WinWebDis
             ConfigurationOptions config = new ConfigurationOptions() { ConnectRetry = 5, AllowAdmin = true };
             config.EndPoints.Add(RedisConnectionString);
             ConnectionMultiplexer adminConnection = ConnectionMultiplexer.Connect(config);
-
             adminConnection.GetServer(RedisConnectionString).Shutdown(ShutdownMode.Default);
         }
 

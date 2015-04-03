@@ -21,11 +21,6 @@ namespace WinWebDis
             _proc.StartInfo.UseShellExecute = false;
             _proc.StartInfo.Arguments = @".\Redis\redis.windows.conf";
             _proc.Start();                      
-        }
-
-        public void KillRedis() // just in case... 
-        {            
-            _proc.Kill();
-        }
+        }  
     }
 }
