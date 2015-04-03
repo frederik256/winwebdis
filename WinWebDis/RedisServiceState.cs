@@ -9,27 +9,29 @@ namespace WinWebDis
 {
     public class RedisServiceCore
     {
-        private static RedisServiceState redis = new RedisServiceState();
+        private static RedisConnectionHelper redisConnection = new RedisConnectionHelper();
+        private RedisSpawner redisProcess = new RedisSpawner();
 
         public static ConnectionMultiplexer RedisConnection
         {
-            get { return redis.RedisConnection; }
+            get { return redisConnection.RedisConnection; }
         }
 
         public bool Start()
         {
-            redis.Initialize();
+            redisProcess.StartRedis();
+            redisConnection.Initialize();
             return true;
         }
 
         public bool Stop()
         {
-            redis.Dispose();
+            redisConnection.Dispose();
             return true;
         }
     }
 
-    internal class RedisServiceState : IDisposable
+    internal class RedisConnectionHelper : IDisposable
     {
         public ConnectionMultiplexer RedisConnection { get; set; }
         public string RedisConnectionString = "localhost:7777";
@@ -38,7 +40,19 @@ namespace WinWebDis
 
         public void Initialize()
         {
-            RedisConnection = ConnectionMultiplexer.Connect(RedisConnectionString);
+            ConfigurationOptions config = new ConfigurationOptions() { ConnectRetry = 50 };
+            config.EndPoints.Add(RedisConnectionString);
+
+            RedisConnection = ConnectionMultiplexer.Connect(config);
+        }
+
+        public void ShutDownRedisServer()
+        {
+            ConfigurationOptions config = new ConfigurationOptions() { ConnectRetry = 5, AllowAdmin = true };
+            config.EndPoints.Add(RedisConnectionString);
+            ConnectionMultiplexer adminConnection = ConnectionMultiplexer.Connect(config);
+
+            adminConnection.GetServer(RedisConnectionString).Shutdown(ShutdownMode.Default);
         }
 
         public void Dispose()
@@ -58,6 +72,8 @@ namespace WinWebDis
                     RedisConnection.Dispose();
                     RedisConnection = null;
                 }
+
+                ShutDownRedisServer();
             }
             disposed = true;
         }
