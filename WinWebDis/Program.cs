@@ -24,7 +24,7 @@ namespace WinWebDis
         {
             var host = HostFactory.New(x =>
             {
-                //x.UseNLog();
+                x.UseNLog();
 
                 x.Service<RedisServiceCore>(s =>
                 {
@@ -33,7 +33,7 @@ namespace WinWebDis
                     s.WhenStopped(service => service.Stop());
                     s.WithNancyEndpoint(x, c =>
                     {
-                        c.AddHost(port: 8080);
+                        c.AddHost(port: 80);
                     });
                 });
                 x.StartAutomatically();
@@ -48,8 +48,4 @@ namespace WinWebDis
             return 1;
         }
     }
-
-
-
-
 }

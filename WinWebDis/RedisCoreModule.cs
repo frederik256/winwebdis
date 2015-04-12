@@ -9,12 +9,14 @@ namespace WinWebDis
     public class RedisCoreModule : NancyModule
     {
         private const int POST_LIMIT = 64 * 1024 * 1024;
-        private const int MAX_REDIS_KEY_LENGTH = 250;
+        private const int MAX_REDIS_KEY_LENGTH = 1250;
         private const int MAX_GUID_KEY_LENGTH = MAX_REDIS_KEY_LENGTH - 32 - 1; // assume "N" format for guid and a separator.  
-        private const string NAMESPACING_SEPARATOR = ":";
+        private const string NAMESPACING_SEPARATOR = "_";
 
         public RedisCoreModule()
         {
+            this.EnableCors();
+
             Get["/status"] = _ => "I am alive! " + Guid.NewGuid().ToString();
 
 
@@ -70,7 +72,7 @@ namespace WinWebDis
 
             var r = (Response)key;
             r.StatusCode = HttpStatusCode.OK; ;
-
+           
             return r;
         }
 
@@ -107,6 +109,17 @@ namespace WinWebDis
             byte[] bytes = new byte[requestStream.Length];
             requestStream.Read(bytes, 0, (int)length);
             return bytes;
+        }
+    }
+
+    public static class NancyExtensions
+    {
+        public static void EnableCors(this NancyModule module)
+        {
+            module.After.AddItemToEndOfPipeline(x =>
+            {
+                x.Response.WithHeader("Access-Control-Allow-Origin", "*");
+            });
         }
     }
 }
