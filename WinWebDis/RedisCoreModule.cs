@@ -9,30 +9,39 @@ namespace WinWebDis
     public class RedisCoreModule : NancyModule
     {
         private const int POST_LIMIT = 64 * 1024 * 1024;
+        private const int MAX_REDIS_KEY_LENGTH = 250;
+        private const int MAX_GUID_KEY_LENGTH = MAX_REDIS_KEY_LENGTH - 32 - 1; // assume "N" format for guid and a separator.  
+        private const string NAMESPACING_SEPARATOR = ":";
 
         public RedisCoreModule()
         {
             Get["/status"] = _ => "I am alive! " + Guid.NewGuid().ToString();
 
+
+            Post["/tempns/{nameSpace:length(1," + MAX_GUID_KEY_LENGTH + ")}/{seconds:int}"] = _ =>
+            {
+                return SetTempKey(_.seconds, _.nameSpace);
+            };
+
             Post["/temp/{seconds:int}"] = _ =>
             {
-                return SetTempKey(_);
+                return SetTempKey(_.seconds);
             };
+
 
             Post["/set/{id:length(1, 250)}"] = _ =>
             {
-                return SetKey(_);
+                return SetKey(_.id);
             };
 
             Get["/get/{id:length(1, 250)}"] = _ =>
             {
-                return GetKey(_);
+                return GetKey(_.id);
             };
         }
 
-        private static dynamic GetKey(dynamic _)
+        private static dynamic GetKey(string id)
         {
-            string id = _.id;
             IDatabase db = RedisServiceCore.RedisConnection.GetDatabase();
             byte[] value = db.StringGet(id);
 
@@ -43,16 +52,18 @@ namespace WinWebDis
             };
         }
 
-        private dynamic SetTempKey(dynamic _)
+        private dynamic SetTempKey(int secondsTillExpiry, string keyprefix = "")
         {
-            int secondsTillExpiry = _.seconds;
-
             if (secondsTillExpiry < 0) throw new InvalidDataException("must have positive expiry value (in seconds).");
 
             byte[] body = Request.Body.ReadAllBytes(POST_LIMIT);
-            var db = RedisServiceCore.RedisConnection.GetDatabase();
 
-            var key = System.Guid.NewGuid().ToString("N");
+            string bodyAsString_debug = System.Text.Encoding.UTF8.GetString(body, 0, body.Length);
+
+            var db = RedisServiceCore.RedisConnection.GetDatabase();
+            var guidStr = System.Guid.NewGuid().ToString("N");
+
+            var key = (keyprefix == "") ? guidStr : keyprefix + ":" + guidStr;
 
             db.StringSet(key, body);
             db.KeyExpire(key, TimeSpan.FromSeconds(secondsTillExpiry), CommandFlags.FireAndForget);
@@ -63,10 +74,8 @@ namespace WinWebDis
             return r;
         }
 
-        private dynamic SetKey(dynamic _)
-        {
-            string id = _.id;
-
+        private dynamic SetKey(string id)
+        {           
             byte[] body = Request.Body.ReadAllBytes(POST_LIMIT);
             var db = RedisServiceCore.RedisConnection.GetDatabase();
 
