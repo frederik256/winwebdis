@@ -29,7 +29,7 @@ namespace WinWebDis
                 x.Service<RedisServiceCore>(s =>
                 {
                     s.ConstructUsing(settings => new RedisServiceCore());
-                    s.WhenStarted(service => service.Start());
+                    s.WhenStarted(service => { service.Start(); Console.WriteLine("started");});
                     s.WhenStopped(service => service.Stop());
                     s.WithNancyEndpoint(x, c =>
                     {
